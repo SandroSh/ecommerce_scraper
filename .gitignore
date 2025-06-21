@@ -1,0 +1,65 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+venv/
+env/
+
+# Jupyter Notebook checkpoints (if any)
+.ipynb_checkpoints/
+
+# Logs and temp files
+*.log
+*.tmp
+*.bak
+
+# Mac and Windows system files
+.DS_Store
+Thumbs.db
+
+# SQLite (if used temporarily)
+*.sqlite3
+*.db
+
+# PostgreSQL dump or config (if generated)
+*.sql
+*.dump
+
+# Data output
+data_output/raw/
+data_output/processed/
+data_output/reports/
+
+# Python cache
+.cache/
+*.pyc
+
+# VS Code
+.vscode/
+
+# PyCharm
+.idea/
+
+# Environment variables / secrets
+.env
+.env.*
+
+# Testing coverage reports
+htmlcov/
+coverage.xml
+*.cover
+.pytest_cache/
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+*.egg
+
+# Reports or HTML artifacts
+*.html
+*.xlsx
+*.csv
+*.json
