@@ -1,11 +1,10 @@
-﻿# main.py
 import argparse
 import os
+import sys
 import logging
 from scrapy.crawler import CrawlerProcess
 from scrapy.utils.project import get_project_settings
-from src.scrapers.zoomer_scraper.zoomer_scraper.spiders.zoomer_spider import ZoomerSpider
-# from src.data.database import init_db
+# Import will be done after setting up paths
 
 
 def configure_logging():
@@ -23,41 +22,51 @@ def main():
     configure_logging()
     logger = logging.getLogger(__name__)
 
-    # Initialize database
-    try:
-        init_db()
-        logger.info("Database initialized successfully")
-    except Exception as e:
-        logger.error(f"Database initialization failed: {e}")
-        return
-
     # Parse command line arguments
-    parser = argparse.ArgumentParser(description='Run Zoomer.ge product scraper')
+    parser = argparse.ArgumentParser(description='Run E-commerce product scraper')
     parser.add_argument('--category', type=str, default='phones',
                         choices=['phones', 'fridges', 'laptops', 'tvs'],
                         help='Product category to scrape')
-    parser.add_argument('--max_products', type=int, default=100,
+    parser.add_argument('--max_products', type=int, default=10,
                         help='Maximum number of products to scrape')
+    parser.add_argument('--model_version', type=str, default='v1',
+                        choices=['v1', 'v2', 'v3'],
+                        help='Data processing model version')
 
     args = parser.parse_args()
 
-    # Configure Scrapy settings
-    os.environ['SCRAPY_SETTINGS_MODULE'] = 'scrapers.zoomer_scraper.settings'
-    settings = get_project_settings()
+    # Add the correct path and import spider
+    sys.path.append('src/scrapers/zoomer_scraper')
+    import zoomer_scraper.settings as spider_settings
+    from zoomer_scraper.spiders.zoomer_spider import ZoomerSpider
 
-    # Override settings if needed
-    settings.set('LOG_FILE', 'scrapy.log')
-    settings.set('FEEDS', {
-        f'data_output/zoomer_{args.category}_{args.max_products}.json': {
+    # Create settings dict with our values
+    settings = {
+        'DOWNLOAD_DELAY': spider_settings.DOWNLOAD_DELAY,
+        'CONCURRENT_REQUESTS': spider_settings.CONCURRENT_REQUESTS,
+        'CONCURRENT_REQUESTS_PER_DOMAIN': spider_settings.CONCURRENT_REQUESTS_PER_DOMAIN,
+        'AUTOTHROTTLE_ENABLED': spider_settings.AUTOTHROTTLE_ENABLED,
+        'AUTOTHROTTLE_TARGET_CONCURRENCY': spider_settings.AUTOTHROTTLE_TARGET_CONCURRENCY,
+        'AUTOTHROTTLE_START_DELAY': spider_settings.AUTOTHROTTLE_START_DELAY,
+        'AUTOTHROTTLE_MAX_DELAY': spider_settings.AUTOTHROTTLE_MAX_DELAY,
+        'USER_AGENT': spider_settings.USER_AGENT,
+        'LOG_LEVEL': spider_settings.LOG_LEVEL,
+        'ROBOTSTXT_OBEY': spider_settings.ROBOTSTXT_OBEY,
+        'RANDOMIZE_DOWNLOAD_DELAY': spider_settings.RANDOMIZE_DOWNLOAD_DELAY,
+        'DEFAULT_REQUEST_HEADERS': spider_settings.DEFAULT_REQUEST_HEADERS,
+        'RETRY_ENABLED': spider_settings.RETRY_ENABLED,
+        'RETRY_TIMES': spider_settings.RETRY_TIMES,
+        'RETRY_HTTP_CODES': spider_settings.RETRY_HTTP_CODES,
+    }
+
+    # Add feeds to settings
+    settings['LOG_FILE'] = 'scrapy.log'
+    settings['FEEDS'] = {
+        f'data_output/raw/zoomer_{args.category}_{args.max_products}.json': {
             'format': 'json',
             'encoding': 'utf8',
         }
-    })
-
-    # Configure database URL from environment variable
-    if 'DATABASE_URL' in os.environ:
-        settings.set('DATABASE_URL', os.environ['DATABASE_URL'])
-        logger.info("Using database URL from environment variable")
+    }
 
     # Start crawling process
     process = CrawlerProcess(settings)
