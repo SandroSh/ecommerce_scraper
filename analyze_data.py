@@ -1,9 +1,3 @@
-#!/usr/bin/env python3
-"""
-Data analysis CLI for e-commerce scraper.
-Processes scraped data and generates comprehensive reports.
-"""
-
 import sys
 import os
 import argparse

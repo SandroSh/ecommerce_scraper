@@ -27,7 +27,7 @@ def main():
     parser.add_argument('--category', type=str, default='phones',
                         choices=['phones', 'fridges', 'laptops', 'tvs'],
                         help='Product category to scrape')
-    parser.add_argument('--max_products', type=int, default=3,
+    parser.add_argument('--max_products', type=int, default=10,
                         help='Maximum number of products to scrape')
     parser.add_argument('--model_version', type=str, default='v1',
                         choices=['v1', 'v2', 'v3'],
@@ -39,7 +39,7 @@ def main():
     sys.path.append('src/scrapers/zoomer_scraper')
     import zoomer_scraper.settings as spider_settings
     from zoomer_scraper.spiders.zoomer_spider import ZoomerSpider
-    
+
     # Create settings dict with our values
     settings = {
         'DOWNLOAD_DELAY': spider_settings.DOWNLOAD_DELAY,

@@ -1,8 +1,3 @@
-"""
-Data processing and cleaning pipeline for e-commerce scraped data.
-Implements data validation, cleaning, and transformation operations.
-"""
-
 import json
 import pandas as pd
 import numpy as np
@@ -13,8 +8,7 @@ import logging
 from pathlib import Path
 
 class DataProcessor:
-    """Main data processing class for cleaning and validating scraped data."""
-    
+
     def __init__(self, config: Optional[Dict] = None):
         self.config = config or {}
         self.logger = logging.getLogger(__name__)
@@ -278,8 +272,7 @@ class DataProcessor:
 
 
 class DataAggregator:
-    """Aggregate data from multiple sources and time periods."""
-    
+
     def __init__(self):
         self.logger = logging.getLogger(__name__)
     

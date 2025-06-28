@@ -1,7 +1,3 @@
-"""
-Automated report generation module for e-commerce data analysis.
-Creates comprehensive reports with insights, visualizations, and summaries.
-"""
 
 import pandas as pd
 import numpy as np
