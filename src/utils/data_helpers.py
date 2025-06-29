@@ -1,5 +1,19 @@
 """
-Data handling utilities for scrapers
+Data Handling Utilities Module
+
+This module provides comprehensive data handling utilities for the ecommerce scraper project.
+It includes data structures, serialization functions, and data processing utilities
+for managing product information across different output formats.
+
+The module provides:
+- Product data structure definition
+- JSON and CSV export functionality
+- Brand extraction utilities
+- Price cleaning and standardization
+- Data validation and transformation
+
+All functions are designed to handle both Product objects and raw dictionaries,
+providing flexibility for different data sources and formats.
 """
 from dataclasses import dataclass
 from datetime import datetime
@@ -11,7 +25,24 @@ import os
 
 @dataclass
 class Product:
-    """Simple product data structure without database dependencies"""
+    """
+    Data structure for representing product information.
+    
+    This dataclass provides a standardized way to store product data
+    without database dependencies. It includes all essential product
+    information and provides serialization methods for export.
+    
+    Attributes:
+        name (str): Product name/title
+        price (str): Product price (as string to handle various formats)
+        brand (str): Product brand/manufacturer
+        category (str): Product category (e.g., 'phones', 'accessories')
+        description (str): Product description or additional details
+        url (str): Product URL. Defaults to empty string.
+        sku (str): Stock keeping unit. Defaults to empty string.
+        created_at (Optional[datetime]): Timestamp of creation. Auto-generated if None.
+    """
+    
     name: str
     price: str
     brand: str
@@ -22,11 +53,17 @@ class Product:
     created_at: Optional[datetime] = None
     
     def __post_init__(self):
+        """Initialize created_at timestamp if not provided."""
         if self.created_at is None:
             self.created_at = datetime.now()
     
     def to_dict(self):
-        """Convert to dictionary for JSON serialization"""
+        """
+        Convert the Product instance to a dictionary for serialization.
+        
+        Returns:
+            dict: Dictionary representation of the product with all attributes.
+        """
         return {
             'name': self.name,
             'price': self.price,
@@ -40,25 +77,33 @@ class Product:
 
 
 def save_products_to_json(products: List, filename: str = "products.json"):
-    """Save products to JSON file - handles both Product objects and dictionaries"""
-    # Convert products to dictionaries
+    """
+    Save a list of products to a JSON file.
+    
+    This function handles both Product objects and raw dictionaries,
+    automatically converting them to the appropriate format for JSON
+    serialization. It creates the output directory if it doesn't exist.
+    
+    Args:
+        products (List): List of products to save. Can contain Product objects
+                        or dictionaries.
+        filename (str): Name of the output JSON file. Defaults to "products.json".
+    
+    Returns:
+        str: Full path to the created JSON file.
+    """
     data = []
     for product in products:
         if hasattr(product, 'to_dict'):
-            # Product object
             data.append(product.to_dict())
         elif isinstance(product, dict):
-            # Already a dictionary
             data.append(product)
         else:
-            # Try to convert to dict if possible
             try:
                 data.append(dict(product))
             except:
-                # Fallback: convert to string representation
                 data.append({"data": str(product)})
     
-    # Ensure output directory exists
     os.makedirs("data_output", exist_ok=True)
     filepath = os.path.join("data_output", filename)
     
@@ -69,11 +114,23 @@ def save_products_to_json(products: List, filename: str = "products.json"):
 
 
 def save_products_to_csv(products: List[Product], filename: str = "products.csv"):
-    """Save products to CSV file"""
+    """
+    Save a list of Product objects to a CSV file.
+    
+    This function creates a CSV file with headers based on the Product
+    dataclass fields and writes all products to the file. It creates
+    the output directory if it doesn't exist.
+    
+    Args:
+        products (List[Product]): List of Product objects to save.
+        filename (str): Name of the output CSV file. Defaults to "products.csv".
+    
+    Returns:
+        str: Full path to the created CSV file, or None if no products provided.
+    """
     if not products:
         return None
     
-    # Ensure output directory exists
     os.makedirs("data_output", exist_ok=True)
     filepath = os.path.join("data_output", filename)
     
@@ -87,11 +144,22 @@ def save_products_to_csv(products: List[Product], filename: str = "products.csv"
 
 
 def extract_brand_from_name(name: str) -> str:
-    """Extract brand from product name"""
+    """
+    Extract brand information from a product name.
+    
+    This function analyzes a product name to identify the brand by matching
+    against a predefined list of known mobile phone brands. If no known brand
+    is found, it returns the first word of the name as the brand.
+    
+    Args:
+        name (str): Product name to analyze for brand information.
+    
+    Returns:
+        str: Extracted brand name, or "Unknown" if no brand can be determined.
+    """
     if not name:
         return "Unknown"
     
-    # Common brand patterns
     brands = [
         "Apple", "Samsung", "Xiaomi", "Huawei", "OnePlus", "Google", "Sony", 
         "LG", "Nokia", "Motorola", "HTC", "BlackBerry", "Asus", "Lenovo",
@@ -103,19 +171,28 @@ def extract_brand_from_name(name: str) -> str:
         if word in brands:
             return word
     
-    # Return first word as brand if no known brand found
     return name_words[0] if name_words else "Unknown"
 
 
 def clean_price(price_text: str) -> str:
-    """Clean and standardize price text"""
+    """
+    Clean and standardize price text by removing unwanted characters.
+    
+    This function removes extra whitespace and non-numeric characters
+    from price text while preserving digits, decimal points, and common
+    currency symbols.
+    
+    Args:
+        price_text (str): Raw price text to clean.
+    
+    Returns:
+        str: Cleaned price text, or "N/A" if the input is empty or invalid.
+    """
     if not price_text:
         return "N/A"
     
-    # Remove extra whitespace and common price prefixes
     cleaned = price_text.strip()
     
-    # Keep only digits, decimal points, and currency symbols
     import re
     cleaned = re.sub(r'[^\d.,₾$€£¥\s]', '', cleaned)
     
