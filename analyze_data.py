@@ -7,8 +7,8 @@ from pathlib import Path
 # Add src to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
-from data.processors import DataProcessor, DataAggregator
-from analysis.reports import ReportGenerator, create_analysis_pipeline
+from src.data.processors import DataProcessor, DataAggregator
+from src.analysis.reports import ReportGenerator, create_analysis_pipeline
 
 
 def setup_logging():

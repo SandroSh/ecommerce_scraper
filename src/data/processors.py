@@ -20,7 +20,7 @@ class DataProcessor:
             'required_fields': ['source', 'name', 'price', 'brand', 'category', 'createdat'],
             'price_range': {'min': 0, 'max': 50000},  # GEL
             'valid_categories': ['phones', 'laptops', 'fridges', 'tvs'],
-            'valid_sources': ['zoommer.ge'],
+            'valid_sources': ['zoommer.ge', 'alta.ge'],
             'name_min_length': 3,
             'brand_min_length': 1
         }
@@ -154,13 +154,24 @@ class DataProcessor:
             cleaned_df['price'] = pd.to_numeric(cleaned_df['price'], errors='coerce')
         
         # Parse and standardize dates
+        # if 'createdat' in cleaned_df.columns:
+        #     cleaned_df['createdat'] = pd.to_datetime(cleaned_df['createdat'], errors='coerce')
+        #     # Add derived date fields
+        #     cleaned_df['scrape_date'] = cleaned_df['createdat'].dt.date
+        #     cleaned_df['scrape_hour'] = cleaned_df['createdat'].dt.hour
+        #     cleaned_df['scrape_weekday'] = cleaned_df['createdat'].dt.day_name()
+        #
         if 'createdat' in cleaned_df.columns:
             cleaned_df['createdat'] = pd.to_datetime(cleaned_df['createdat'], errors='coerce')
+            # ✅ Make timezone naive for Excel export
+            if pd.api.types.is_datetime64tz_dtype(cleaned_df['createdat']):
+                cleaned_df['createdat'] = cleaned_df['createdat'].dt.tz_localize(None)
             # Add derived date fields
             cleaned_df['scrape_date'] = cleaned_df['createdat'].dt.date
             cleaned_df['scrape_hour'] = cleaned_df['createdat'].dt.hour
             cleaned_df['scrape_weekday'] = cleaned_df['createdat'].dt.day_name()
-        
+
+
         # Extract features from product names
         if 'name' in cleaned_df.columns:
             # Extract storage capacity (GB/TB)
