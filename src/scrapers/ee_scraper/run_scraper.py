@@ -1,7 +1,17 @@
 #!/usr/bin/env python3
 """
 Standalone EE Scraper Runner
-This file can be run directly from the ee_scraper directory
+
+This module provides a standalone execution interface for the EE scraper.
+It can be run directly from the ee_scraper directory and includes command-line
+argument parsing, logging setup, and error handling.
+
+The module handles:
+- Command-line argument parsing
+- Logging configuration
+- Scraper initialization and execution
+- Output file management
+- Error handling and reporting
 """
 
 import sys
@@ -24,7 +34,16 @@ except ImportError as e:
     sys.exit(1)
 
 def setup_logging():
-    """Setup basic logging for the scraper"""
+    """
+    Configure logging for the scraper with both file and console output.
+    
+    Sets up a logging configuration that writes to both a log file and
+    the console. The log file is named 'ee_scraper.log' and includes
+    timestamps, logger names, and log levels.
+    
+    Returns:
+        logging.Logger: Configured logger instance
+    """
     logging.basicConfig(
         level=logging.INFO,
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -36,7 +55,17 @@ def setup_logging():
     return logging.getLogger(__name__)
 
 def parse_arguments():
-    """Parse command line arguments"""
+    """
+    Parse command-line arguments for the EE scraper.
+    
+    Defines and parses command-line arguments including:
+    - max_products: Maximum number of products to scrape
+    - sleep: Delay between requests
+    - output_dir: Directory for output files
+    
+    Returns:
+        argparse.Namespace: Parsed command-line arguments
+    """
     parser = argparse.ArgumentParser(description='EE Mobile Phone Scraper')
     parser.add_argument('--max_products', type=int, default=0,
                         help='Maximum number of products to scrape (0 = all products, default: 0)')
@@ -47,7 +76,20 @@ def parse_arguments():
     return parser.parse_args()
 
 def main():
-    """Main function to run the EE scraper"""
+    """
+    Main execution function for the EE scraper.
+    
+    This function orchestrates the entire scraping process:
+    1. Parses command-line arguments
+    2. Sets up logging
+    3. Creates output directory
+    4. Initializes and runs the scraper
+    5. Saves results to output files
+    6. Handles errors and provides status reporting
+    
+    The function includes comprehensive error handling and will exit
+    with status code 1 if any critical errors occur.
+    """
     args = parse_arguments()
     
     # Setup logging

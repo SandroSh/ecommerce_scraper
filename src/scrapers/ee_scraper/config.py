@@ -1,6 +1,20 @@
 """
-Configuration file for EE Scraper
-Contains all the settings and constants used by the scraper
+EE Scraper Configuration Module
+
+This module contains all configuration settings and constants used by the EE scraper.
+It provides centralized configuration management including URLs, selectors,
+logging settings, and output preferences.
+
+The configuration is organized into logical sections:
+- Base URLs and endpoints
+- Default settings and parameters
+- HTTP headers for requests
+- CSS selectors for HTML parsing
+- Logging configuration
+- Output file settings
+
+All settings can be modified here to adapt the scraper to different
+website structures or requirements.
 """
 
 # Base URL for the EE mobile phones page
