@@ -24,6 +24,9 @@ def main():
 
     # Parse command line arguments
     parser = argparse.ArgumentParser(description='Run E-commerce product scraper')
+    parser.add_argument('--source', type=str, default='zoomer',
+                        choices=['zoomer', 'ee'],
+                        help='Scraping source (zoomer = scrapy, ee = beautifulsoup)')
     parser.add_argument('--category', type=str, default='phones',
                         choices=['phones', 'fridges', 'laptops', 'tvs'],
                         help='Product category to scrape')
@@ -35,51 +38,64 @@ def main():
 
     args = parser.parse_args()
 
-    # Add the correct path and import spider
-    sys.path.append('src/scrapers/zoomer_scraper')
-    import zoomer_scraper.settings as spider_settings
-    from zoomer_scraper.spiders.zoomer_spider import ZoomerSpider
+    if args.source == 'zoomer':
+        # Add the correct path and import spider
+        sys.path.append('src/scrapers/zoomer_scraper')
+        import zoomer_scraper.settings as spider_settings
+        from zoomer_scraper.spiders.zoomer_spider import ZoomerSpider
 
-    # Create settings dict with our values
-    settings = {
-        'DOWNLOAD_DELAY': spider_settings.DOWNLOAD_DELAY,
-        'CONCURRENT_REQUESTS': spider_settings.CONCURRENT_REQUESTS,
-        'CONCURRENT_REQUESTS_PER_DOMAIN': spider_settings.CONCURRENT_REQUESTS_PER_DOMAIN,
-        'AUTOTHROTTLE_ENABLED': spider_settings.AUTOTHROTTLE_ENABLED,
-        'AUTOTHROTTLE_TARGET_CONCURRENCY': spider_settings.AUTOTHROTTLE_TARGET_CONCURRENCY,
-        'AUTOTHROTTLE_START_DELAY': spider_settings.AUTOTHROTTLE_START_DELAY,
-        'AUTOTHROTTLE_MAX_DELAY': spider_settings.AUTOTHROTTLE_MAX_DELAY,
-        'USER_AGENT': spider_settings.USER_AGENT,
-        'LOG_LEVEL': spider_settings.LOG_LEVEL,
-        'ROBOTSTXT_OBEY': spider_settings.ROBOTSTXT_OBEY,
-        'RANDOMIZE_DOWNLOAD_DELAY': spider_settings.RANDOMIZE_DOWNLOAD_DELAY,
-        'DEFAULT_REQUEST_HEADERS': spider_settings.DEFAULT_REQUEST_HEADERS,
-        'RETRY_ENABLED': spider_settings.RETRY_ENABLED,
-        'RETRY_TIMES': spider_settings.RETRY_TIMES,
-        'RETRY_HTTP_CODES': spider_settings.RETRY_HTTP_CODES,
-    }
-
-    # Add feeds to settings
-    settings['LOG_FILE'] = 'scrapy.log'
-    settings['FEEDS'] = {
-        f'data_output/raw/zoomer_{args.category}_{args.max_products}.json': {
-            'format': 'json',
-            'encoding': 'utf8',
+        # Create settings dict with our values
+        settings = {
+            'DOWNLOAD_DELAY': spider_settings.DOWNLOAD_DELAY,
+            'CONCURRENT_REQUESTS': spider_settings.CONCURRENT_REQUESTS,
+            'CONCURRENT_REQUESTS_PER_DOMAIN': spider_settings.CONCURRENT_REQUESTS_PER_DOMAIN,
+            'AUTOTHROTTLE_ENABLED': spider_settings.AUTOTHROTTLE_ENABLED,
+            'AUTOTHROTTLE_TARGET_CONCURRENCY': spider_settings.AUTOTHROTTLE_TARGET_CONCURRENCY,
+            'AUTOTHROTTLE_START_DELAY': spider_settings.AUTOTHROTTLE_START_DELAY,
+            'AUTOTHROTTLE_MAX_DELAY': spider_settings.AUTOTHROTTLE_MAX_DELAY,
+            'USER_AGENT': spider_settings.USER_AGENT,
+            'LOG_LEVEL': spider_settings.LOG_LEVEL,
+            'ROBOTSTXT_OBEY': spider_settings.ROBOTSTXT_OBEY,
+            'RANDOMIZE_DOWNLOAD_DELAY': spider_settings.RANDOMIZE_DOWNLOAD_DELAY,
+            'DEFAULT_REQUEST_HEADERS': spider_settings.DEFAULT_REQUEST_HEADERS,
+            'RETRY_ENABLED': spider_settings.RETRY_ENABLED,
+            'RETRY_TIMES': spider_settings.RETRY_TIMES,
+            'RETRY_HTTP_CODES': spider_settings.RETRY_HTTP_CODES,
         }
-    }
 
-    # Start crawling process
-    process = CrawlerProcess(settings)
-    logger.info(f"Starting spider for category: {args.category} (max: {args.max_products} products)")
+        # Add feeds to settings
+        settings['LOG_FILE'] = 'scrapy.log'
+        settings['FEEDS'] = {
+            f'data_output/raw/zoomer_{args.category}_{args.max_products}.json': {
+                'format': 'json',
+                'encoding': 'utf8',
+            }
+        }
 
-    process.crawl(
-        ZoomerSpider,
-        category=args.category,
-        max_products=args.max_products
-    )
+        # Start crawling process
+        process = CrawlerProcess(settings)
+        logger.info(f"Starting spider for category: {args.category} (max: {args.max_products} products)")
 
-    process.start()
-    logger.info("Scraping completed successfully")
+        process.crawl(
+            ZoomerSpider,
+            category=args.category,
+            max_products=args.max_products
+        )
+
+        process.start()
+        logger.info("Scraping completed successfully")
+
+    else:
+        # Run BeautifulSoup-based scraper
+        sys.path.append('src/scrapers/ee_scraper')
+        from src.scrapers.ee_scraper.ee_scraper import EEScraper
+
+        logger.info("Starting EE scraper using BeautifulSoup...")
+
+        scraper = EEScraper()
+        scraper.run()
+
+        logger.info("EE scraping completed successfully")
 
 
 if __name__ == "__main__":
