@@ -1,13 +1,42 @@
+"""
+E-commerce Scraper Main Entry Point
+
+This module serves as the main entry point for the ecommerce scraper application.
+It provides a unified interface for running different scrapers (Scrapy-based and
+BeautifulSoup-based) with configurable parameters and comprehensive logging.
+
+The module supports multiple scraping sources:
+- Zoomer (Scrapy-based spider)
+- EE (BeautifulSoup-based scraper)
+
+Features:
+- Command-line argument parsing
+- Configurable logging
+- Multiple scraper support
+- Category-based scraping
+- Product limit controls
+- Model version selection
+"""
+
 import argparse
 import os
 import sys
 import logging
 from scrapy.crawler import CrawlerProcess
 from scrapy.utils.project import get_project_settings
-# Import will be done after setting up paths
 
 
 def configure_logging():
+    """
+    Configure logging for the main application.
+    
+    Sets up logging with both file and console output, using a consistent
+    format that includes timestamps, logger names, and log levels. The
+    log file is named 'scraper.log'.
+    
+    The logging configuration applies to the entire application and ensures
+    consistent logging across all components.
+    """
     logging.basicConfig(
         level=logging.INFO,
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -19,10 +48,30 @@ def configure_logging():
 
 
 def main():
+    """
+    Main execution function for the ecommerce scraper application.
+    
+    This function orchestrates the entire scraping process:
+    1. Configures logging
+    2. Parses command-line arguments
+    3. Determines the appropriate scraper to use
+    4. Configures scraper settings
+    5. Executes the scraping process
+    6. Provides status reporting
+    
+    The function supports two main scraping sources:
+    - Zoomer: Uses Scrapy framework with configurable spider settings
+    - EE: Uses BeautifulSoup with custom scraper implementation
+    
+    Command-line arguments allow customization of:
+    - Scraping source (zoomer/ee)
+    - Product category (phones/fridges/laptops/tvs)
+    - Maximum number of products
+    - Model version for data processing
+    """
     configure_logging()
     logger = logging.getLogger(__name__)
 
-    # Parse command line arguments
     parser = argparse.ArgumentParser(description='Run E-commerce product scraper')
     parser.add_argument('--source', type=str, default='zoomer',
                         choices=['zoomer', 'ee'],
@@ -39,12 +88,10 @@ def main():
     args = parser.parse_args()
 
     if args.source == 'zoomer':
-        # Add the correct path and import spider
         sys.path.append('src/scrapers/zoomer_scraper')
         import zoomer_scraper.settings as spider_settings
         from zoomer_scraper.spiders.zoomer_spider import ZoomerSpider
 
-        # Create settings dict with our values
         settings = {
             'DOWNLOAD_DELAY': spider_settings.DOWNLOAD_DELAY,
             'CONCURRENT_REQUESTS': spider_settings.CONCURRENT_REQUESTS,
@@ -63,7 +110,6 @@ def main():
             'RETRY_HTTP_CODES': spider_settings.RETRY_HTTP_CODES,
         }
 
-        # Add feeds to settings
         settings['LOG_FILE'] = 'scrapy.log'
         settings['FEEDS'] = {
             f'data_output/raw/zoomer_{args.category}_{args.max_products}.json': {
@@ -72,7 +118,6 @@ def main():
             }
         }
 
-        # Start crawling process
         process = CrawlerProcess(settings)
         logger.info(f"Starting spider for category: {args.category} (max: {args.max_products} products)")
 
@@ -86,7 +131,6 @@ def main():
         logger.info("Scraping completed successfully")
 
     else:
-        # Run BeautifulSoup-based scraper
         sys.path.append('src/scrapers/ee_scraper')
         from src.scrapers.ee_scraper.ee_scraper import EEScraper
 
