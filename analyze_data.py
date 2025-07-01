@@ -1,8 +1,30 @@
+"""
+E-commerce Data Analysis Tool
+
+This module provides a comprehensive data analysis pipeline for ecommerce scraped data.
+It includes data processing, analysis, and reporting capabilities with support for
+multiple input formats and export options.
+
+The module supports three main operations:
+- process: Process individual data files with cleaning and validation
+- analyze: Generate comprehensive analysis reports from processed data
+- pipeline: Complete end-to-end processing and analysis workflow
+
+Features:
+- Multi-format data processing (JSON, CSV, Excel)
+- Data quality assessment and validation
+- Statistical analysis and reporting
+- Automated report generation
+- Configurable output formats
+- Comprehensive logging and error handling
+"""
+
 import sys
 import os
 import argparse
 import logging
-
+from pathlib import Path
+from typing import Optional
 
 # Add src to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
@@ -12,7 +34,16 @@ from src.analysis.reports import ReportGenerator, create_analysis_pipeline
 
 
 def setup_logging():
-    """Set up logging configuration."""
+    """
+    Configure logging for the data analysis tool.
+    
+    Sets up logging with both file and console output, using a consistent
+    format that includes timestamps, logger names, and log levels. The
+    log file is named 'analysis.log'.
+    
+    The logging configuration applies to the entire analysis process and
+    ensures consistent logging across all components.
+    """
     logging.basicConfig(
         level=logging.INFO,
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -23,8 +54,22 @@ def setup_logging():
     )
 
 
-def process_single_file(input_file: str, output_dir: str = None):
-    """Process a single data file."""
+def process_single_file(input_file: str, output_dir: Optional[str] = None):
+    """
+    Process a single data file with cleaning, validation, and export.
+    
+    This function processes an individual data file through the complete
+    data processing pipeline, including data cleaning, validation, quality
+    assessment, and export to multiple formats.
+    
+    Args:
+        input_file (str): Path to the input data file to process
+        output_dir (Optional[str]): Output directory for processed files.
+                                  Defaults to "data_output/processed"
+    
+    Returns:
+        bool: True if processing was successful, False otherwise
+    """
     if output_dir is None:
         output_dir = "data_output/processed"
     
@@ -50,8 +95,22 @@ def process_single_file(input_file: str, output_dir: str = None):
     return True
 
 
-def analyze_data(input_files: list, output_dir: str = None):
-    """Analyze processed data and generate reports."""
+def analyze_data(input_files: list, output_dir: Optional[str] = None):
+    """
+    Analyze processed data and generate comprehensive reports.
+    
+    This function performs statistical analysis on processed data files
+    and generates various types of reports including summary statistics,
+    trend analysis, and data quality reports.
+    
+    Args:
+        input_files (list): List of processed data file paths to analyze
+        output_dir (Optional[str]): Output directory for analysis reports.
+                                  Defaults to "data_output/reports"
+    
+    Returns:
+        bool: True if analysis was successful, False otherwise
+    """
     if output_dir is None:
         output_dir = "data_output/reports"
     
@@ -80,7 +139,25 @@ def analyze_data(input_files: list, output_dir: str = None):
 
 
 def main():
-    """Main CLI function."""
+    """
+    Main command-line interface for the ecommerce data analysis tool.
+    
+    This function provides a comprehensive CLI for data processing and analysis
+    operations. It supports three main commands:
+    
+    - process: Process individual data files with cleaning and validation
+    - analyze: Generate analysis reports from processed data
+    - pipeline: Complete end-to-end processing and analysis workflow
+    
+    The function includes comprehensive argument parsing, input validation,
+    error handling, and status reporting.
+    
+    Command-line arguments:
+        command: The operation to perform (process/analyze/pipeline)
+        --input: Input file(s) to process or analyze
+        --output: Output directory for results
+        --formats: Export formats for processed data
+    """
     parser = argparse.ArgumentParser(description='E-commerce Data Analysis Tool')
     parser.add_argument('command', choices=['process', 'analyze', 'pipeline'], 
                        help='Command to execute')
