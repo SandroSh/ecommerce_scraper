@@ -16,6 +16,7 @@ sys.path.insert(0, 'src')
 from src.data.processors import DataProcessor, DataAggregator
 
 
+
 class ErrorTracker:
     """Track and report errors during execution"""
 
@@ -95,7 +96,7 @@ class InteractiveExportMenu:
     def display_menu(cls):
         """Display export options menu"""
         print("\n" + "=" * 50)
-        print("📁 DATA EXPORT OPTIONS")
+        print("DATA EXPORT OPTIONS")
         print("=" * 50)
         for key, (formats, description) in cls.EXPORT_OPTIONS.items():
             print(f"{key}) {description}")
@@ -110,10 +111,10 @@ class InteractiveExportMenu:
 
             if choice in cls.EXPORT_OPTIONS:
                 formats, description = cls.EXPORT_OPTIONS[choice]
-                print(f"\n✅ Selected: {description}")
+                print(f"\nSelected: {description}")
                 return formats
             else:
-                print("\n❌ Invalid choice. Please select a number between 1-7.")
+                print("\nInvalid choice. Please select a number between 1-7.")
 
 
 def configure_logging():
@@ -123,20 +124,31 @@ def configure_logging():
 
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
 
+    # Remove all handlers associated with the root logger object.
+    for handler in logging.root.handlers[:]:
+        logging.root.removeHandler(handler)
+
+    # FileHandler always supports encoding
+    file_handler = logging.FileHandler(f'logs/scraper_{timestamp}.log', encoding='utf-8')
+
+    # StreamHandler with utf-8 encoding (Python 3.9+)
+    try:
+        stream_handler = logging.StreamHandler(open(sys.stdout.fileno(), mode='w', encoding='utf-8', buffering=1))
+    except Exception:
+        # Fallback for older Python or if above fails
+        stream_handler = logging.StreamHandler(sys.stdout)
+
     logging.basicConfig(
         level=logging.INFO,
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-        handlers=[
-            logging.FileHandler(f'logs/scraper_{timestamp}.log'),
-            logging.StreamHandler()
-        ]
+        handlers=[file_handler, stream_handler]
     )
 
 
 def run_zoomer_scraper(args, logger, error_tracker):
     """Run Zoomer scraper with Scrapy"""
     try:
-        logger.info("🚀 Starting Zoomer scraper...")
+        logger.info("Starting Zoomer scraper...")
 
         from src.scrapers.zoomer_scraper.zoomer_scraper import settings as spider_settings
         from src.scrapers.zoomer_scraper.zoomer_scraper.spiders.zoomer_spider import ZoomerSpider
@@ -170,22 +182,22 @@ def run_zoomer_scraper(args, logger, error_tracker):
         process.crawl(ZoomerSpider, category=args.category, max_products=args.max_products)
         process.start()
 
-        logger.info("✅ Zoomer scraping completed")
+        logger.info("Zoomer scraping completed")
         return True
 
     except Exception as e:
         error_tracker.log_error("ZoomerScraper", e, f"Category: {args.category}, Max products: {args.max_products}")
-        logger.error(f"❌ Zoomer scraping failed: {e}")
+        logger.error(f"Zoomer scraping failed: {e}")
         return False
 
 
 def run_alta_scraper(args, logger, error_tracker):
     """Run Alta scraper with Selenium"""
     try:
-        logger.info("🚀 Starting Alta scraper...")
+        logger.info(" Starting Alta scraper...")
 
         sys.path.insert(0, 'src/scrapers/alta_scraper')
-        from alta_selenium_scraper import AltaScraper
+        from src.scrapers.alta_scraper.alta_selenium_scraper import AltaScraper
 
         scraper = AltaScraper(
             headless=True,
@@ -194,29 +206,29 @@ def run_alta_scraper(args, logger, error_tracker):
         )
         filepath = scraper.run(args.category)
 
-        if filepath:
-            logger.info(f"✅ Alta scraping completed. Data saved to: {filepath}")
+        if filepath and os.path.exists(filepath):
+            logger.info(f" Alta scraping completed. Data saved to: {filepath}")
             return True
         else:
-            error_tracker.log_warning("AltaScraper", "Scraping completed but no data was saved",
+            error_tracker.log_warning("AltaScraper", "Scraping completed but no data was saved or file not found",
                                       f"Category: {args.category}")
-            logger.warning("⚠️ Alta scraping completed but no data was saved")
+            logger.warning(" Alta scraping completed but no data was saved or file not found")
             return False
 
     except ImportError as e:
         error_tracker.log_error("AltaScraper", e, "Import error - check if Alta scraper dependencies are installed")
-        logger.error(f"❌ Failed to import Alta scraper: {e}")
+        logger.error(f" Failed to import Alta scraper: {e}")
         return False
     except Exception as e:
         error_tracker.log_error("AltaScraper", e, f"Category: {args.category}, Max products: {args.max_products}")
-        logger.error(f"❌ Alta scraping failed: {e}")
+        logger.error(f" Alta scraping failed: {e}")
         return False
 
 
 def process_raw_data_combined(args, logger, error_tracker, export_formats: List[str]):
     """Process and combine cleaned valid data from all raw JSON files into one dataset."""
     try:
-        logger.info("🔄 Starting combined data processing...")
+        logger.info(" Starting combined data processing...")
 
         processor = DataProcessor()
         output_dir = "data_output/processed"
@@ -239,7 +251,7 @@ def process_raw_data_combined(args, logger, error_tracker, export_formats: List[
 
         for file_path in raw_files:
             try:
-                logger.info(f"📥 Loading file: {file_path}")
+                logger.info(f" Loading file: {file_path}")
                 df = processor.load_raw_data(file_path)
                 total_loaded += len(df)
 
@@ -254,53 +266,53 @@ def process_raw_data_combined(args, logger, error_tracker, export_formats: List[
                 cleaned_dfs.append(cleaned_df)
                 total_valid += len(cleaned_df)
 
-                logger.info(f"✅ {file_path}: {len(cleaned_df)} valid records (from {len(df)})")
+                logger.info(f" {file_path}: {len(cleaned_df)} valid records (from {len(df)})")
 
             except Exception as e:
                 processing_errors += 1
                 error_tracker.log_error("DataProcessor", e, f"Processing file: {file_path}")
-                logger.error(f"❌ Error processing file {file_path}: {e}")
+                logger.error(f" Error processing file {file_path}: {e}")
 
         # Combine all cleaned records
         if not cleaned_dfs:
             error_tracker.log_error("DataProcessor", Exception("No valid data found"),
                                     f"Processed {len(raw_files)} files, {processing_errors} errors")
-            logger.error("❌ No valid data found in any file")
+            logger.error(" No valid data found in any file")
             return False
 
         combined_df = pd.concat(cleaned_dfs, ignore_index=True)
-        logger.info(f"📊 Total valid combined records: {len(combined_df)} (from {total_loaded} scraped)")
+        logger.info(f" Total valid combined records: {len(combined_df)} (from {total_loaded} scraped)")
 
         # Export to selected formats
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         output_path = f"{output_dir}/all_sources_combined_{timestamp}"
 
-        logger.info(f"📁 Exporting data in formats: {', '.join(export_formats)}")
+        logger.info(f" Exporting data in formats: {', '.join(export_formats)}")
         exported = processor.export_data(combined_df, output_path, formats=export_formats)
 
-        logger.info("✅ Combined export completed")
+        logger.info(" Combined export completed")
         for fmt, path in exported.items():
-            logger.info(f"  📁 {fmt.upper()}: {path}")
+            logger.info(f"   {fmt.upper()}: {path}")
 
         return True
 
     except Exception as e:
         error_tracker.log_error("DataProcessor", e, "Combined data processing")
-        logger.error(f"❌ Data processing failed: {e}")
+        logger.error(f" Data processing failed: {e}")
         return False
 
 
 def run_automated_analysis(logger, error_tracker):
     """Automatically run data analysis after processing"""
     try:
-        logger.info("🔍 Starting automated data analysis...")
+        logger.info("Starting automated data analysis...")
 
         # Check if analyze_data.py exists
         analysis_script = "analyze_data.py"
         if not os.path.exists(analysis_script):
             error_tracker.log_warning("AutoAnalysis", f"Analysis script not found: {analysis_script}",
                                       "Skipping automated analysis")
-            logger.warning(f"⚠️ {analysis_script} not found. Skipping automated analysis.")
+            logger.warning(f" {analysis_script} not found. Skipping automated analysis.")
             return False
 
         # Run the analysis script
@@ -308,7 +320,7 @@ def run_automated_analysis(logger, error_tracker):
                                 capture_output=True, text=True, timeout=300)
 
         if result.returncode == 0:
-            logger.info("✅ Automated data analysis completed successfully")
+            logger.info(" Automated data analysis completed successfully")
             if result.stdout:
                 logger.info("Analysis output:")
                 for line in result.stdout.split('\n'):
@@ -319,42 +331,42 @@ def run_automated_analysis(logger, error_tracker):
             error_tracker.log_error("AutoAnalysis",
                                     Exception(f"Analysis script failed with return code {result.returncode}"),
                                     f"stderr: {result.stderr}")
-            logger.error(f"❌ Analysis script failed: {result.stderr}")
+            logger.error(f" Analysis script failed: {result.stderr}")
             return False
 
     except subprocess.TimeoutExpired:
         error_tracker.log_error("AutoAnalysis", Exception("Analysis script timeout"),
                                 "Script took longer than 5 minutes")
-        logger.error("❌ Analysis script timed out (5 minutes)")
+        logger.error(" Analysis script timed out (5 minutes)")
         return False
     except Exception as e:
         error_tracker.log_error("AutoAnalysis", e, "Running automated analysis")
-        logger.error(f"❌ Failed to run automated analysis: {e}")
+        logger.error(f" Failed to run automated analysis: {e}")
         return False
 
 
 def print_execution_summary(error_tracker, logger, scraping_success, processing_success, analysis_success):
     """Print comprehensive execution summary"""
     print("\n" + "=" * 80)
-    print("📊 EXECUTION SUMMARY")
+    print(" EXECUTION SUMMARY")
     print("=" * 80)
 
     execution_time = datetime.now() - error_tracker.start_time
 
-    print(f"⏱️  Total execution time: {execution_time}")
-    print(f"✅ Scraping: {'SUCCESS' if scraping_success else 'FAILED'}")
-    print(f"🔄 Processing: {'SUCCESS' if processing_success else 'FAILED'}")
-    print(f"🔍 Analysis: {'SUCCESS' if analysis_success else 'FAILED/SKIPPED'}")
+    print(f"  Total execution time: {execution_time}")
+    print(f" Scraping: {'SUCCESS' if scraping_success else 'FAILED'}")
+    print(f" Processing: {'SUCCESS' if processing_success else 'FAILED'}")
+    print(f" Analysis: {'SUCCESS' if analysis_success else 'FAILED/SKIPPED'}")
 
     if error_tracker.errors:
-        print(f"\n❌ Errors encountered: {len(error_tracker.errors)}")
+        print(f"\n Errors encountered: {len(error_tracker.errors)}")
         for i, error in enumerate(error_tracker.errors[-3:], 1):  # Show last 3 errors
             print(f"   {i}. {error['component']}: {error['error_type']} - {error['error_message']}")
         if len(error_tracker.errors) > 3:
             print(f"   ... and {len(error_tracker.errors) - 3} more errors")
 
     if error_tracker.warnings:
-        print(f"\n⚠️  Warnings: {len(error_tracker.warnings)}")
+        print(f"\n  Warnings: {len(error_tracker.warnings)}")
         for i, warning in enumerate(error_tracker.warnings[-3:], 1):  # Show last 3 warnings
             print(f"   {i}. {warning['component']}: {warning['message']}")
         if len(error_tracker.warnings) > 3:
@@ -395,7 +407,7 @@ def main():
     args = parser.parse_args()
 
     try:
-        logger.info("🎯 Starting E-commerce Data Pipeline")
+        logger.info("Starting E-commerce Data Pipeline")
         logger.info("=" * 60)
         logger.info(f"  Category: {args.category}")
         logger.info(f"  Max products: {args.max_products}")
@@ -411,7 +423,7 @@ def main():
 
         # Scraping phase
         if not args.process_only:
-            logger.info("🚀 PHASE 1: DATA SCRAPING")
+            logger.info(" PHASE 1: DATA SCRAPING")
             scraping_results = []
 
             if args.scraper in ['zoomer', 'both']:
@@ -426,11 +438,11 @@ def main():
 
             if not scraping_success:
                 error_tracker.log_error("Pipeline", Exception("All scrapers failed"), "Scraping phase")
-                logger.error("❌ All scrapers failed!")
+                logger.error(" All scrapers failed!")
 
         # Processing phase
         if not args.skip_processing:
-            logger.info("\n🔄 PHASE 2: DATA PROCESSING")
+            logger.info("\n PHASE 2: DATA PROCESSING")
 
             # Get export formats
             if args.export_formats:
@@ -441,40 +453,40 @@ def main():
 
             processing_success = process_raw_data_combined(args, logger, error_tracker, export_formats)
         else:
-            logger.info("⏭️  Skipping data processing phase")
+            logger.info(" Skipping data processing phase")
 
         # Analysis phase
         if not args.skip_analysis and processing_success:
-            logger.info("\n🔍 PHASE 3: AUTOMATED ANALYSIS")
+            logger.info("\n PHASE 3: AUTOMATED ANALYSIS")
             analysis_success = run_automated_analysis(logger, error_tracker)
         else:
             if args.skip_analysis:
-                logger.info("⏭️  Skipping automated analysis phase")
+                logger.info("  Skipping automated analysis phase")
             else:
-                logger.info("⏭️  Skipping analysis due to processing failure")
+                logger.info("  Skipping analysis due to processing failure")
                 analysis_success = False
 
         # Generate diagnostics report
         if args.generate_diagnostics or error_tracker.errors:
-            logger.info("\n📋 GENERATING DIAGNOSTICS REPORT")
+            logger.info("\n GENERATING DIAGNOSTICS REPORT")
             diagnostics_file = error_tracker.generate_diagnostics_report()
-            logger.info(f"📁 Diagnostics report saved: {diagnostics_file}")
+            logger.info(f" Diagnostics report saved: {diagnostics_file}")
 
         # Print final summary
         print_execution_summary(error_tracker, logger, scraping_success, processing_success, analysis_success)
 
         if scraping_success and processing_success:
-            logger.info("\n🎉 Pipeline completed successfully!")
+            logger.info("\n Pipeline completed successfully!")
         else:
-            logger.warning("\n⚠️  Pipeline completed with some failures. Check logs for details.")
+            logger.warning("\n  Pipeline completed with some failures. Check logs for details.")
 
     except KeyboardInterrupt:
         error_tracker.log_error("Pipeline", Exception("User interrupted execution"), "KeyboardInterrupt")
-        logger.error("\n❌ Execution interrupted by user")
+        logger.error("\n Execution interrupted by user")
         sys.exit(1)
     except Exception as e:
         error_tracker.log_error("Pipeline", e, "Main execution")
-        logger.error(f"\n❌ Unexpected error in main execution: {e}")
+        logger.error(f"\n Unexpected error in main execution: {e}")
         logger.error(f"Traceback: {traceback.format_exc()}")
         sys.exit(1)
 

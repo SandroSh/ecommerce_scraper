@@ -55,24 +55,24 @@ class AltaScraper:
             self.driver.set_page_load_timeout(AltaConfig.PAGE_LOAD_TIMEOUT)
             self.wait = WebDriverWait(self.driver, AltaConfig.ELEMENT_TIMEOUT)
 
-            self.logger.info("✅ Chrome WebDriver initialized successfully")
+            self.logger.info("Chrome WebDriver initialized successfully")
 
         except Exception as e:
-            self.logger.error(f"❌ Failed to initialize WebDriver: {e}")
+            self.logger.error(f"Failed to initialize WebDriver: {e}")
             raise
 
     def test_site_accessibility(self) -> bool:
         """Test if alta.ge is accessible."""
         try:
-            self.logger.info("🔍 Testing site accessibility...")
+            self.logger.info("Testing site accessibility...")
             self.driver.get(AltaConfig.BASE_URL)
             self.wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
 
             current_url = self.driver.current_url
             page_title = self.driver.title
 
-            self.logger.info(f"📍 Current URL: {current_url}")
-            self.logger.info(f"📄 Page title: {page_title}")
+            self.logger.info(f"Current URL: {current_url}")
+            self.logger.info(f"Page title: {page_title}")
 
             page_source = self.driver.page_source.lower()
             blocking_indicators = [
@@ -82,17 +82,17 @@ class AltaScraper:
 
             for indicator in blocking_indicators:
                 if indicator in page_source:
-                    self.logger.warning(f"⚠️ Possible blocking detected: {indicator}")
+                    self.logger.warning(f"Possible blocking detected: {indicator}")
                     return False
 
-            self.logger.info("✅ Site is accessible")
+            self.logger.info("Site is accessible")
             return True
 
         except TimeoutException:
-            self.logger.error("❌ Timeout accessing the site")
+            self.logger.error("Timeout accessing the site")
             return False
         except Exception as e:
-            self.logger.error(f"❌ Error accessing site: {e}")
+            self.logger.error(f"Error accessing site: {e}")
             return False
 
     def find_product_elements(self, category: str):
@@ -108,11 +108,11 @@ class AltaScraper:
             try:
                 elements = self.driver.find_elements(By.CSS_SELECTOR, selector)
                 if elements:
-                    self.logger.info(f"📦 Found {len(elements)} elements with category selector: {selector}")
+                    self.logger.info(f"Found {len(elements)} elements with category selector: {selector}")
                     filtered_elements = [e for e in elements if AltaUtilities.is_product_element(e)]
 
                     if filtered_elements:
-                        self.logger.info(f"📦 Filtered to {len(filtered_elements)} actual product elements")
+                        self.logger.info(f"Filtered to {len(filtered_elements)} actual product elements")
                         product_elements = filtered_elements
                         break
             except Exception as e:
@@ -121,16 +121,16 @@ class AltaScraper:
 
         # Fall back to general selectors if category-specific didn't work
         if not product_elements:
-            self.logger.info("🔄 Falling back to general selectors...")
+            self.logger.info("Falling back to general selectors...")
             for selector in AltaConfig.PRODUCT_SELECTORS:
                 try:
                     elements = self.driver.find_elements(By.CSS_SELECTOR, selector)
                     if elements:
-                        self.logger.info(f"📦 Found {len(elements)} elements with general selector: {selector}")
+                        self.logger.info(f"Found {len(elements)} elements with general selector: {selector}")
                         filtered_elements = [e for e in elements if AltaUtilities.is_product_element(e)]
 
                         if filtered_elements:
-                            self.logger.info(f"📦 Filtered to {len(filtered_elements)} actual product elements")
+                            self.logger.info(f"Filtered to {len(filtered_elements)} actual product elements")
                             product_elements = filtered_elements
                             break
                 except Exception as e:
@@ -278,7 +278,7 @@ class AltaScraper:
         self.current_category = category
 
         try:
-            self.logger.info(f"🔍 Loading {category} category page: {category_url}")
+            self.logger.info(f"Loading {category} category page: {category_url}")
             self.driver.get(category_url)
             time.sleep(5)
 
@@ -292,10 +292,10 @@ class AltaScraper:
             product_elements = self.find_product_elements(category)
 
             if not product_elements:
-                self.logger.warning(f"❌ No product elements found for {category}")
+                self.logger.warning(f"No product elements found for {category}")
                 return products
 
-            self.logger.info(f"📊 Processing {len(product_elements)} product elements for {category}...")
+            self.logger.info(f"Processing {len(product_elements)} product elements for {category}...")
 
             for i, element in enumerate(product_elements):
                 if len(products) >= self.max_products:
@@ -313,7 +313,7 @@ class AltaScraper:
                         })
 
                         products.append(product_data)
-                        self.logger.info(f"✅ [{len(products)}] {product_data['name'][:60]}...")
+                        self.logger.info(f"[{len(products)}] {product_data['name'][:60]}...")
                         time.sleep(0.5)
 
                 except Exception as e:
@@ -321,7 +321,7 @@ class AltaScraper:
                     continue
 
         except Exception as e:
-            self.logger.error(f"❌ Error scraping {category} products: {e}")
+            self.logger.error(f"Error scraping {category} products: {e}")
 
         return products
 
@@ -333,19 +333,19 @@ class AltaScraper:
             self.setup_driver()
 
             if not self.test_site_accessibility():
-                self.logger.error("❌ Site is not accessible")
+                self.logger.error("Site is not accessible")
                 return ""
 
             category_path = AltaConfig.CATEGORY_URLS.get(category)
             if not category_path:
-                self.logger.error(f"❌ Unknown category: {category}")
+                self.logger.error(f"Unknown category: {category}")
                 return ""
 
             category_url = f"{AltaConfig.BASE_URL}{category_path}"
             products = self.scrape_products(category_url, category)
 
             if not products:
-                self.logger.warning(f"⚠️ No products were scraped from {category}")
+                self.logger.warning(f"No products were scraped from {category}")
                 return ""
 
             filepath = AltaUtilities.save_data(products, category)
@@ -359,4 +359,4 @@ class AltaScraper:
         finally:
             if self.driver:
                 self.driver.quit()
-                self.logger.info("🔒 WebDriver closed")
+                self.logger.info("WebDriver closed")

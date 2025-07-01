@@ -194,11 +194,11 @@ def main():
         # Print summary
         print_summary(results, data)
 
-        print(f"\n✅ Analysis completed successfully!")
+        print(f"\nAnalysis completed successfully!")
 
     except Exception as e:
         logging.error(f"Analysis failed: {e}")
-        print(f"\n❌ Analysis failed: {e}")
+        print(f"\nAnalysis failed: {e}")
         sys.exit(1)
 
 

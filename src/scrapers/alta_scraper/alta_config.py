@@ -20,29 +20,67 @@ class AltaConfig:
     DELAY_RANGE = (2, 5)
 
     # Enhanced Product selectors - more comprehensive coverage
+    # Updated product container selectors
     PRODUCT_SELECTORS = [
-        # Primary selectors based on visible HTML structure
-        'div[class*="sc-4a8e2816"]',  # Main product container
-        'div[class*="sc-35fd0e08"]',  # Secondary product container
-        'div[class*="sc-eee205a"]',  # Grid container items
-        'div[class*="sc-88de82a8"]',  # Product detail containers
-
-        # Additional dynamic selectors
-        'div[class*="sc-"][class*="grid"]',
-        'div[class*="sc-"][class*="item"]',
-        'div[class*="sc-"][class*="card"]',
-
-        # Fallback selectors
-        '.product-card',
-        '.product-item',
-        '[class*="product"]',
-        'div[class*="card"]',
-
-        # Generic containers that might hold products
-        'article',
-        'div[data-testid*="product"]',
-        'div[role="listitem"]'
+        'div[class*="sc-"][class*="gBOJXd"]',  # Main product containers
+        'div[class*="sc-28c9b3a8-"]',  # Product card containers
+        'div[class*="sc-4cc3966f-"]',  # Category containers
+        'div[class*="sc-88de82a8-"]',  # Individual product items
+        'article[class*="sc-"]',  # Article containers
+        '.product-item',  # Fallback
+        '.product-card',  # Fallback
     ]
+
+    # Updated name selectors
+    NAME_SELECTORS = [
+        'h2[class*="sc-"][class*="kfQwkI"]',  # Product titles
+        'h1[class*="sc-"][class*="dyUwJu"]',  # Main product names
+        'h2[title]',  # Elements with title attribute
+        'a[title]',  # Links with titles
+        '[class*="sc-28c9b3a8-"] h2',  # Headers in product cards
+        '[class*="sc-bf675a3-"] h1',  # Product detail titles
+    ]
+
+    # Updated price selectors
+    PRICE_SELECTORS = [
+        'span[class*="currency"]',  # Currency spans
+        'span[class*="sc-28c9b3a8-"][class*="jkcOBV"]',  # Price elements
+        'div[class*="sc-88de82a8-"] span',  # Price in product containers
+        '[class*="price"]',  # Generic price classes
+        'span:contains("₾")',  # Georgian Lari symbol
+        'span:contains("ლ")',  # Alternative currency
+    ]
+
+    # Updated image selectors
+    IMAGE_SELECTORS = [
+        'img[class*="sc-28c9b3a8-"]',  # Product images
+        'img[data-nimg="fill"]',  # Next.js images
+        'img[decoding="async"]',  # Async loaded images
+        'img[src*="imagestore.alta.ge"]',  # Alta's image CDN
+    ]
+
+    # Category-specific selectors
+    CATEGORY_SELECTORS = {
+        'phones': {
+            'container': [
+                'div[class*="sc-28c9b3a8-0"]',
+                'div[class*="iuDoCo"]',
+                'a[href*="/mobile-phones/"]',
+            ],
+            'name': [
+                'h2[class*="sc-28c9b3a8-10"]',
+                'h1[class*="sc-bf675a3-2"]',
+                'h2[title*="Samsung"]',
+                'h2[title*="iPhone"]',
+                'h2[title*="Realme"]',
+            ],
+            'price': [
+                'span[class*="sc-28c9b3a8-13"]',
+                'span[class*="jkcOBV"]',
+                'span[class*="currency"]',
+            ]
+        }
+    }
 
     # Enhanced Name selectors
     NAME_SELECTORS = [
