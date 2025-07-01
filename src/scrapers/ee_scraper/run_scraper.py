@@ -19,6 +19,8 @@ import os
 import argparse
 import logging
 from datetime import datetime
+import shutil
+from pathlib import Path
 
 # Add the project root to Python path
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
@@ -28,6 +30,8 @@ try:
     from src.scrapers.ee_scraper.ee_scraper import EEScraper
     from src.utils.logger import get_logger
     from src.utils.data_helpers import save_products_to_json
+    from src.data.processors import DataProcessor
+    from analyze_data import run_analysis
 except ImportError as e:
     print(f"Import error: {e}")
     print("Make sure you're running this from the project root directory")
@@ -53,6 +57,26 @@ def setup_logging():
         ]
     )
     return logging.getLogger(__name__)
+
+def get_next_incremented_folder(base_dir, prefix):
+    """
+    Find the next available incremented folder (e.g., processed1, processed2, ...).
+    Returns the path to the new folder.
+    """
+    base = Path(base_dir)
+    base.mkdir(parents=True, exist_ok=True)
+    i = 1
+    while (base / f"{prefix}{i}").exists():
+        i += 1
+    new_folder = base / f"{prefix}{i}"
+    new_folder.mkdir()
+    return str(new_folder)
+
+def delete_file(filepath):
+    try:
+        os.remove(filepath)
+    except Exception as e:
+        logging.warning(f"Could not delete file {filepath}: {e}")
 
 def parse_arguments():
     """
@@ -102,28 +126,51 @@ def main():
     logger.info("=" * 50)
 
     try:
-        # Create output directory if it doesn't exist - use absolute path
+        # Step 1: Scrape and save raw data
         output_dir = os.path.abspath(args.output_dir)
         os.makedirs(output_dir, exist_ok=True)
         logger.info(f"Output directory created/verified: {output_dir}")
-        
-        # Initialize and run scraper
         scraper = EEScraper(max_products=args.max_products, sleep=args.sleep)
         products = scraper.run()
-        
-        if products:
-            # Save to output directory with absolute paths (JSON only)
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            json_file = os.path.join(output_dir, f"ee_phones_{timestamp}.json")
-            
-            # Save file directly to the output directory
-            save_products_to_json(products, json_file)
-            
-            logger.info(f"Successfully scraped {len(products)} products")
-            logger.info(f"Results saved to: {json_file}")
-        else:
+        if not products:
             logger.warning("No products were scraped")
-            
+            return
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        raw_json_file = os.path.join(output_dir, f"ee_phones_{timestamp}.json")
+        save_products_to_json(products, raw_json_file)
+        logger.info(f"Successfully scraped {len(products)} products")
+        logger.info(f"Raw results saved to: {raw_json_file}")
+
+        # Step 2: Process raw data into new processedN folder
+        processed_base = os.path.join(project_root, "data_output", "processed")
+        processed_folder = get_next_incremented_folder(processed_base, "processed")
+        logger.info(f"Processing raw data into: {processed_folder}")
+        processor = DataProcessor()
+        processing_report = processor.process_file(raw_json_file, processed_folder)
+        logger.info(f"Processing report: {processing_report}")
+
+        # Step 3: Delete raw data file
+        delete_file(raw_json_file)
+        logger.info(f"Deleted raw data file: {raw_json_file}")
+
+        # Step 4: Analyze processed data and save reports in new reportN folder
+        report_base = os.path.join(project_root, "data_output", "reports")
+        report_folder = get_next_incremented_folder(report_base, "report")
+        logger.info(f"Running analysis, reports will be saved in: {report_folder}")
+        # Find processed JSON files in processed_folder
+        processed_files = [str(f) for f in Path(processed_folder).glob("*.json")]
+        if not processed_files:
+            logger.warning(f"No processed JSON files found in {processed_folder}")
+            return
+        import pandas as pd
+        from src.analysis.statistics import StatisticalAnalyzer
+        from src.analysis.trends import TrendAnalyzer
+        from src.analysis.reports import ReportGenerator
+        from analyze_data import load_data
+        data = load_data(processed_files)
+        run_analysis(data, output_dir=report_folder)
+        logger.info(f"Analysis and report generation complete. Reports saved in: {report_folder}")
+
     except Exception as e:
         logger.error(f"Error running scraper: {e}")
         import traceback

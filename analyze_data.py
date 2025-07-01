@@ -11,6 +11,7 @@ import pandas as pd
 import logging
 from pathlib import Path
 from typing import List, Dict, Any
+import argparse
 
 # Add src to path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
@@ -175,10 +176,15 @@ def main():
     """Main function."""
     setup_logging()
 
+    parser = argparse.ArgumentParser(description="E-commerce Data Analysis Script")
+    parser.add_argument("processed_dir", nargs="?", default="data_output/processed", help="Directory with processed data files")
+    parser.add_argument("report_dir", nargs="?", default="data_output/reports", help="Directory to save reports")
+    args = parser.parse_args()
+
     try:
         # Find processed files
         logging.info("Looking for processed data files...")
-        processed_files = find_processed_files()
+        processed_files = find_processed_files(args.processed_dir)
         print(f"Found {len(processed_files)} processed file(s):")
         for f in processed_files:
             print(f"  • {f}")
@@ -189,7 +195,7 @@ def main():
 
         # Run analysis
         print(f"Running comprehensive analysis...")
-        results = run_analysis(data)
+        results = run_analysis(data, output_dir=args.report_dir)
 
         # Print summary
         print_summary(results, data)

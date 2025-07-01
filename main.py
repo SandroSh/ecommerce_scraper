@@ -15,6 +15,9 @@ from typing import List, Dict, Any, Optional
 sys.path.insert(0, 'src')
 from src.data.processors import DataProcessor, DataAggregator
 
+sys.path.insert(0, 'src')
+from src.data.processors import DataProcessor, DataAggregator
+from src.scrapers.ee_scraper.ee_scraper import EEScraper
 
 
 class ErrorTracker:
@@ -145,6 +148,37 @@ def configure_logging():
     )
 
 
+def run_ee_scraper(args, logger, error_tracker):
+    """Run EE scraper with BeautifulSoup"""
+    try:
+        logger.info("🔄 Starting EE scraper...")
+
+        scraper = EEScraper(
+            max_products=args.max_products,
+            sleep=1.0  # 1 second delay between requests
+        )
+
+        products = scraper.run()
+
+        if products and len(products) > 0:
+            logger.info(f" EE scraping completed. Found {len(products)} products")
+            return True
+        else:
+            error_tracker.log_warning("EEScraper", "Scraping completed but no products were found",
+                                      f"Category: {args.category}")
+            logger.warning(" EE scraping completed but no products were found")
+            return False
+
+    except ImportError as e:
+        error_tracker.log_error("EEScraper", e, "Import error - check if EE scraper dependencies are installed")
+        logger.error(f" Failed to import EE scraper: {e}")
+        return False
+    except Exception as e:
+        error_tracker.log_error("EEScraper", e, f"Category: {args.category}, Max products: {args.max_products}")
+        logger.error(f" EE scraping failed: {e}")
+        return False
+
+
 def run_zoomer_scraper(args, logger, error_tracker):
     """Run Zoomer scraper with Scrapy"""
     try:
@@ -225,14 +259,26 @@ def run_alta_scraper(args, logger, error_tracker):
         return False
 
 
+def get_next_incremental_folder(base_dir, prefix):
+    """Return the next available folder path as base_dir/prefixN (N=1,2,...)"""
+    base = Path(base_dir)
+    base.mkdir(parents=True, exist_ok=True)
+    existing = [d for d in base.iterdir() if d.is_dir() and d.name.startswith(prefix)]
+    nums = [int(d.name[len(prefix):]) for d in existing if d.name[len(prefix):].isdigit()]
+    next_n = max(nums, default=0) + 1
+    next_folder = base / f"{prefix}{next_n}"
+    next_folder.mkdir(parents=True, exist_ok=True)
+    return str(next_folder)
+
+
 def process_raw_data_combined(args, logger, error_tracker, export_formats: List[str]):
     """Process and combine cleaned valid data from all raw JSON files into one dataset."""
     try:
         logger.info(" Starting combined data processing...")
 
         processor = DataProcessor()
-        output_dir = "data_output/processed"
-        Path(output_dir).mkdir(parents=True, exist_ok=True)
+        # Create new processedN folder
+        processed_dir = get_next_incremental_folder("data_output/processed", "processed")
 
         raw_data_dir = "data_output/raw"
         raw_files = glob.glob(f"{raw_data_dir}/*.json")
@@ -240,7 +286,7 @@ def process_raw_data_combined(args, logger, error_tracker, export_formats: List[
         if not raw_files:
             error_tracker.log_warning("DataProcessor", "No raw data files found", f"Directory: {raw_data_dir}")
             logger.warning("No raw data files found in 'data_output/raw'")
-            return False
+            return False, []
 
         logger.info(f"Found {len(raw_files)} raw data files")
 
@@ -278,14 +324,14 @@ def process_raw_data_combined(args, logger, error_tracker, export_formats: List[
             error_tracker.log_error("DataProcessor", Exception("No valid data found"),
                                     f"Processed {len(raw_files)} files, {processing_errors} errors")
             logger.error(" No valid data found in any file")
-            return False
+            return False, []
 
         combined_df = pd.concat(cleaned_dfs, ignore_index=True)
         logger.info(f" Total valid combined records: {len(combined_df)} (from {total_loaded} scraped)")
 
-        # Export to selected formats
+        # Export to selected formats in processedN folder
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        output_path = f"{output_dir}/all_sources_combined_{timestamp}"
+        output_path = f"{processed_dir}/all_sources_combined_{timestamp}"
 
         logger.info(f" Exporting data in formats: {', '.join(export_formats)}")
         exported = processor.export_data(combined_df, output_path, formats=export_formats)
@@ -294,15 +340,15 @@ def process_raw_data_combined(args, logger, error_tracker, export_formats: List[
         for fmt, path in exported.items():
             logger.info(f"   {fmt.upper()}: {path}")
 
-        return True
+        return processed_dir, raw_files  # Return processed dir and raw files for later use
 
     except Exception as e:
         error_tracker.log_error("DataProcessor", e, "Combined data processing")
         logger.error(f" Data processing failed: {e}")
-        return False
+        return False, []
 
 
-def run_automated_analysis(logger, error_tracker):
+def run_automated_analysis(logger, error_tracker, processed_dir=None):
     """Automatically run data analysis after processing"""
     try:
         logger.info("Starting automated data analysis...")
@@ -315,8 +361,11 @@ def run_automated_analysis(logger, error_tracker):
             logger.warning(f" {analysis_script} not found. Skipping automated analysis.")
             return False
 
-        # Run the analysis script
-        result = subprocess.run([sys.executable, analysis_script],
+        # Create new reportN folder
+        report_dir = get_next_incremental_folder("data_output/reports", "report")
+
+        # Run the analysis script with processed_dir and report_dir
+        result = subprocess.run([sys.executable, analysis_script, processed_dir, report_dir],
                                 capture_output=True, text=True, timeout=300)
 
         if result.returncode == 0:
@@ -326,7 +375,7 @@ def run_automated_analysis(logger, error_tracker):
                 for line in result.stdout.split('\n'):
                     if line.strip():
                         logger.info(f"  {line}")
-            return True
+            return report_dir
         else:
             error_tracker.log_error("AutoAnalysis",
                                     Exception(f"Analysis script failed with return code {result.returncode}"),
@@ -380,7 +429,7 @@ def main():
     logger = logging.getLogger(__name__)
     error_tracker = ErrorTracker()
 
-    parser = argparse.ArgumentParser(description='Run E-commerce product scraper and data processor')
+    parser = argparse.ArgumentParser(description='Run E-commerce product scraper and data processor (Zoomer, Alta, EE)')
     parser.add_argument('--category', type=str, default='phones',
                         choices=['phones', 'fridges', 'laptops', 'tvs'],
                         help='Product category to scrape')
@@ -389,9 +438,9 @@ def main():
     parser.add_argument('--model_version', type=str, default='v1',
                         choices=['v1', 'v2', 'v3'],
                         help='Data processing model version')
-    parser.add_argument('--scraper', type=str, default='both',
-                        choices=['zoomer', 'alta', 'both'],
-                        help='Which scraper to run')
+    parser.add_argument('--scraper', type=str, default='all',
+                        choices=['zoomer', 'alta', 'ee', 'both', 'all'],
+                        help='Which scraper to run (both = zoomer+alta, all = zoomer+alta+ee)')
     parser.add_argument('--process-only', action='store_true',
                         help='Skip scraping and only process existing raw data')
     parser.add_argument('--skip-processing', action='store_true',
@@ -411,7 +460,14 @@ def main():
         logger.info("=" * 60)
         logger.info(f"  Category: {args.category}")
         logger.info(f"  Max products: {args.max_products}")
-        logger.info(f"  Scraper: {args.scraper}")
+        scraper_description = {
+            'zoomer': 'Zoomer only',
+            'alta': 'Alta only',
+            'ee': 'EE only',
+            'both': 'Zoomer + Alta',
+            'all': 'Zoomer + Alta + EE'
+        }
+        logger.info(f" Scraper: {scraper_description.get(args.scraper, args.scraper)}")
         logger.info(f"  Process only: {args.process_only}")
         logger.info(f"  Skip processing: {args.skip_processing}")
         logger.info(f"  Skip analysis: {args.skip_analysis}")
@@ -421,17 +477,23 @@ def main():
         processing_success = True
         analysis_success = True
 
-        # Scraping phase
+        processed_dir = None
+        raw_files = []
         if not args.process_only:
             logger.info(" PHASE 1: DATA SCRAPING")
             scraping_results = []
 
-            if args.scraper in ['zoomer', 'both']:
+            if args.scraper in ['zoomer', 'both', 'all']:
                 result = run_zoomer_scraper(args, logger, error_tracker)
                 scraping_results.append(result)
 
-            if args.scraper in ['alta', 'both']:
+            if args.scraper in ['alta', 'both', 'all']:
                 result = run_alta_scraper(args, logger, error_tracker)
+                scraping_results.append(result)
+
+            # ADD this new section:
+            if args.scraper in ['ee', 'all']:
+                result = run_ee_scraper(args, logger, error_tracker)
                 scraping_results.append(result)
 
             scraping_success = any(scraping_results) if scraping_results else False
@@ -443,22 +505,20 @@ def main():
         # Processing phase
         if not args.skip_processing:
             logger.info("\n PHASE 2: DATA PROCESSING")
-
-            # Get export formats
             if args.export_formats:
                 export_formats = args.export_formats
                 logger.info(f"Using command-line export formats: {export_formats}")
             else:
                 export_formats = InteractiveExportMenu.get_user_choice()
-
-            processing_success = process_raw_data_combined(args, logger, error_tracker, export_formats)
+            processed_dir, raw_files = process_raw_data_combined(args, logger, error_tracker, export_formats)
         else:
             logger.info(" Skipping data processing phase")
 
         # Analysis phase
-        if not args.skip_analysis and processing_success:
+        report_dir = None
+        if not args.skip_analysis and processed_dir:
             logger.info("\n PHASE 3: AUTOMATED ANALYSIS")
-            analysis_success = run_automated_analysis(logger, error_tracker)
+            report_dir = run_automated_analysis(logger, error_tracker, processed_dir)
         else:
             if args.skip_analysis:
                 logger.info("  Skipping automated analysis phase")
@@ -471,6 +531,15 @@ def main():
             logger.info("\n GENERATING DIAGNOSTICS REPORT")
             diagnostics_file = error_tracker.generate_diagnostics_report()
             logger.info(f" Diagnostics report saved: {diagnostics_file}")
+
+        # Delete raw files after processing and analysis
+        if raw_files:
+            for f in raw_files:
+                try:
+                    os.remove(f)
+                    logger.info(f"Deleted raw file: {f}")
+                except Exception as e:
+                    logger.warning(f"Failed to delete raw file {f}: {e}")
 
         # Print final summary
         print_execution_summary(error_tracker, logger, scraping_success, processing_success, analysis_success)

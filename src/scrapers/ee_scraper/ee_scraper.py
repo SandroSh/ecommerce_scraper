@@ -335,7 +335,7 @@ class EEScraper:
                 'source': 'ee.ge',
                 'category': category,
                 'description': f"Stock: Available, SKU: {brand}-{price}, Warranty: 12 months, Specs: {category.title()}, URL: {link}",
-                'timestamp': datetime.now().isoformat()
+                'createdat': datetime.now().isoformat()
             }
 
             return product
