@@ -4,7 +4,6 @@ import sys
 import logging
 from scrapy.crawler import CrawlerProcess
 from scrapy.utils.project import get_project_settings
-# Import will be done after setting up paths
 
 
 def configure_logging():
