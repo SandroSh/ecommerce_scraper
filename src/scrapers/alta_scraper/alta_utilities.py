@@ -153,7 +153,7 @@ class AltaUtilities:
             output_dir.mkdir(parents=True, exist_ok=True)
 
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"alta_{category}_{len(products)}_{timestamp}.json"
+            filename = f"alta_{category}_{len(products)}.json"
             filepath = output_dir / filename
 
             with open(filepath, 'w', encoding='utf-8') as f:
