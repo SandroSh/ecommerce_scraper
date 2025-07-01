@@ -45,7 +45,7 @@ class EEScraper:
     
     BASE_URL = "https://beta.ee.ge/en/mobiluri-telefonebi-da-aqsesuarebi-c320s"
 
-    def __init__(self, max_products=100, sleep=1.0):
+    def __init__(self, max_products=10, sleep=1.0):
         """
         Initialize the EE scraper with configuration parameters.
         
@@ -128,7 +128,7 @@ class EEScraper:
         if len(urls) < 20:
             self.logger.info("Generating page URLs manually (limited to 20 pages)...")
             
-            for page_num in range(0, 51): 
+            for page_num in range(0, 1):
                 pattern = f"{self.BASE_URL}?page={page_num}"
                 urls.add(pattern)
             
@@ -335,7 +335,7 @@ class EEScraper:
                 'source': 'ee.ge',
                 'category': category,
                 'description': f"Stock: Available, SKU: {brand}-{price}, Warranty: 12 months, Specs: {category.title()}, URL: {link}",
-                'timestamp': datetime.now().isoformat()
+                'createdat': datetime.now().isoformat()
             }
 
             return product

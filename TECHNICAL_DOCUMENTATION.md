@@ -8,8 +8,8 @@ The `ecommerce_scraper` project is a Python-based platform for scraping product 
 
 ## Project Structure
 
-- **main.py**: Entry point for scraping operations.
-- **analyze_data.py**: Command-line tool for data analysis and processing.
+- **main.py**: Entry point for the full scraping, processing, and analysis pipeline. Supports CLI arguments for category, product limits, scrapers, export formats, diagnostics, and more.
+- **analyze_data.py**: Command-line tool for data analysis and processing. Supports analysis, processing, and pipeline modes with flexible input/output and export options.
 - **run_spider.py**: Utility for running spiders directly.
 - **requirements.txt**: Python dependencies.
 - **config/**: YAML configuration files for scrapers and global settings.
@@ -54,10 +54,17 @@ The `ecommerce_scraper` project is a Python-based platform for scraping product 
 
 ## Data Flow
 
-1. **Scraping**: Scrapers collect product data from target websites.
-2. **Processing**: Data is cleaned, validated, and transformed into a standard format.
-3. **Analysis**: Statistical and trend analyses are performed on the processed data.
-4. **Reporting**: Results are output as JSON, CSV, Excel, and visual reports (PNG, HTML).
+1. **Scraping**: Scrapers collect product data from target websites. The main pipeline (main.py) can run multiple scrapers (Zoomer, Alta, EE) in sequence or individually, with configurable product limits and categories.
+2. **Processing**: Data is cleaned, validated, and transformed into a standard format. The pipeline supports combining multiple raw files, validation, cleaning, and export to multiple formats (JSON, CSV, Excel).
+3. **Analysis**: Statistical and trend analyses are performed on the processed data. Automated analysis can be triggered from the pipeline or run separately via analyze_data.py.
+4. **Reporting**: Results are output as JSON, CSV, Excel, and visual reports (PNG, HTML). Executive summaries and diagnostics reports are also generated.
+
+---
+
+## CLI & Pipeline Usage
+
+- **main.py**: Supports CLI arguments for category, max_products, model_version, scraper selection, process-only, skip-processing, skip-analysis, export-formats, and diagnostics. See the user guide for full argument list and examples.
+- **analyze_data.py**: Supports analyze, process, and pipeline commands. Flexible input/output, export format selection, and verbose/debug logging.
 
 ---
 
@@ -66,6 +73,14 @@ The `ecommerce_scraper` project is a Python-based platform for scraping product 
 - **config/scrapers.yaml**: Site-specific scraping settings (selectors, URLs, limits).
 - **config/settings.yaml**: Global project settings (output paths, logging, etc.).
 - **src/scrapers/zoomer_scraper/zoomer_scraper/settings.py**: Scrapy-specific settings (concurrency, delays, throttling).
+
+---
+
+## Error Handling & Logging
+
+- Centralized logging is provided via `src/utils/logger.py` and enhanced in main.py for pipeline runs. Logs are saved to the logs/ directory with timestamps.
+- Error tracking and diagnostics are built into the pipeline. Detailed diagnostics reports (JSON) are generated on demand or when errors occur.
+- Warnings and errors are tracked and summarized at the end of each pipeline run.
 
 ---
 
@@ -88,11 +103,11 @@ The `ecommerce_scraper` project is a Python-based platform for scraping product 
 
 ## Dependencies
 
-- **scrapy**: Web scraping framework
-- **selenium**: For dynamic content scraping
-- **pandas, numpy, scipy**: Data processing and analysis
-- **matplotlib, seaborn**: Visualization
-- **pyyaml**: Configuration file parsing
+- scrapy: Web scraping framework
+- selenium: For dynamic content scraping
+- pandas, numpy, scipy: Data processing and analysis
+- matplotlib, seaborn: Visualization
+- pyyaml: Configuration file parsing
 
 ---
 
@@ -101,6 +116,7 @@ The `ecommerce_scraper` project is a Python-based platform for scraping product 
 - **Raw Data**: JSON files in `data_output/raw/`
 - **Processed Data**: Cleaned data in `data_output/processed/`
 - **Reports**: Visual and textual reports in `data_output/reports/`
+- **Diagnostics**: JSON diagnostics reports in `data_output/diagnostics/`
 
 ---
 

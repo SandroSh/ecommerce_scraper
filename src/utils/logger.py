@@ -23,16 +23,16 @@ import sys
 def get_logger(name: str = "scraper", log_file: str = "scraper.log") -> logging.Logger:
     """
     Create and configure a logger instance with both console and file output.
-    
+
     This function creates a logger with the specified name and configures it
     with both stream (console) and file handlers. It prevents duplicate
     handlers from being added when the function is called multiple times
     with the same logger name.
-    
+
     Args:
         name (str): The name of the logger. Defaults to "scraper".
         log_file (str): The filename for the log file. Defaults to "scraper.log".
-    
+
     Returns:
         logging.Logger: A configured logger instance with both console and file output.
     """

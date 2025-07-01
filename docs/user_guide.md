@@ -40,12 +40,17 @@ Welcome to the user guide for the `ecommerce_scraper` platform. This guide will 
 ## 3. Basic Usage
 
 ### Scraping Data
-Run the main scraper to collect product data:
+Run the main pipeline to collect product data:
 ```bash
 python main.py --category phones --max_products 10
 ```
 - Replace `phones` with `laptops`, `fridges`, or `tvs` for other categories.
 - Adjust `--max_products` to control the number of products scraped.
+- Use `--scraper` to select which scraper(s) to run: `zoomer`, `alta`, `ee`, `both`, or `all`.
+- Use `--process-only` to skip scraping and process existing raw data.
+- Use `--skip-processing` or `--skip-analysis` to skip those pipeline phases.
+- Use `--export-formats` to specify output formats (json, csv, excel).
+- Use `--generate-diagnostics` to create a diagnostics report.
 
 ### Analyzing Data
 Analyze the scraped data using the analysis CLI:
@@ -129,6 +134,8 @@ ls data_output/phone_analysis_100/
   - The scraper handles rate limiting automatically. Adjust `DOWNLOAD_DELAY` in settings if needed.
 - **Debug mode:**
   - Enable verbose logging: `python analyze_data.py analyze --input data.json --verbose`
+- **Diagnostics:**
+  - Use `--generate-diagnostics` with main.py to generate a detailed diagnostics report after pipeline execution.
 
 ---
 

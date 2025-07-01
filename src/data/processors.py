@@ -20,7 +20,7 @@ class DataProcessor:
             'required_fields': ['source', 'name', 'price', 'brand', 'category', 'createdat'],
             'price_range': {'min': 0, 'max': 50000},  # GEL
             'valid_categories': ['phones', 'laptops', 'fridges', 'tvs'],
-            'valid_sources': ['zoommer.ge', 'alta.ge'],
+            'valid_sources': ['zoommer.ge', 'alta.ge', 'ee.ge'],
             'name_min_length': 3,
             'brand_min_length': 1
         }

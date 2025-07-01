@@ -1,12 +1,46 @@
 # API Reference
 
-This document provides an overview of the main classes and functions available in the `ecommerce_scraper` project. It is intended for developers and advanced users who want to extend or integrate with the platform.
+This document provides an overview of the main classes, functions, and command-line interfaces available in the `ecommerce_scraper` project. It is intended for developers and advanced users who want to extend or integrate with the platform.
+
+---
+
+## Command-Line Interfaces
+
+### main.py
+Located in: project root
+
+Runs the full scraping, processing, and analysis pipeline. Supports the following CLI arguments:
+
+- `--category`: Product category to scrape (`phones`, `laptops`, `fridges`, `tvs`).
+- `--max_products`: Maximum number of products to scrape.
+- `--model_version`: Data processing model version (`v1`, `v2`, `v3`).
+- `--scraper`: Which scraper(s) to run (`zoomer`, `alta`, `ee`, `both`, `all`).
+- `--process-only`: Skip scraping and only process existing raw data.
+- `--skip-processing`: Skip data processing after scraping.
+- `--skip-analysis`: Skip automated analysis after processing.
+- `--export-formats`: Export formats (bypasses interactive menu; options: `json`, `csv`, `excel`).
+- `--generate-diagnostics`: Generate detailed diagnostics report.
+
+### analyze_data.py
+Located in: project root
+
+Command-line tool for data analysis and processing. Supports the following commands:
+
+- `analyze`: Analyze one or more input files and generate reports.
+- `process`: Clean and validate data, export to selected formats.
+- `pipeline`: Run the full analysis pipeline (process + analyze).
+
+Common arguments:
+- `--input`: Input file(s) for analysis or processing.
+- `--output`: Output directory for reports or processed data.
+- `--formats`: Export formats (json, csv, excel).
+- `--verbose`: Enable verbose logging.
 
 ---
 
 ## Data Processing
 
-### `DataProcessor`
+### DataProcessor
 Located in: `src/data/processors.py`
 
 Handles data loading, validation, cleaning, and feature extraction for e-commerce product data.
@@ -23,7 +57,7 @@ Handles data loading, validation, cleaning, and feature extraction for e-commerc
 
 ## Statistical Analysis
 
-### `StatisticalAnalyzer`
+### StatisticalAnalyzer
 Located in: `src/analysis/statistics.py`
 
 Performs comprehensive statistical analysis on product data.
@@ -42,7 +76,7 @@ Performs comprehensive statistical analysis on product data.
 
 ## Report Generation
 
-### `ReportGenerator`
+### ReportGenerator
 Located in: `src/analysis/reports.py`
 
 Generates executive summaries, detailed reports, and visualizations from analyzed data.
@@ -59,7 +93,7 @@ Generates executive summaries, detailed reports, and visualizations from analyze
 
 ## Scraping
 
-### `EEScraper`
+### EEScraper
 Located in: `src/scrapers/ee_scraper/ee_scraper.py`
 
 A robust scraper for extracting product data from the EE.ge website.
@@ -76,7 +110,7 @@ A robust scraper for extracting product data from the EE.ge website.
 
 ## Utilities
 
-### `get_logger`
+### get_logger
 Located in: `src/utils/logger.py`
 
 - `get_logger(name: str = "scraper", log_file: str = "scraper.log") -> logging.Logger`: Returns a configured logger instance for use throughout the project.

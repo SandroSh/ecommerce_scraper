@@ -33,7 +33,7 @@ def parse_args():
         argparse.Namespace: Parsed command-line arguments
     """
     parser = argparse.ArgumentParser(description='EE Mobile Scraper')
-    parser.add_argument('--max_products', type=int, default=0,
+    parser.add_argument('--max_products', type=int, default=3,
                         help='Maximum number of products to scrape (0 = all)')
     parser.add_argument('--sleep', type=float, default=1.0,
                         help='Delay between requests in seconds')
@@ -56,7 +56,7 @@ def main():
     logger = get_logger("ee_scraper_main")
     logger.info("Launching EE scraper...")
 
-    scraper = EEScraper(max_products=args.max_products, sleep=args.sleep)
+    scraper = EEScraper(max_products=3, sleep=args.sleep)
     scraper.run()
 
     logger.info("EE scraper finished successfully.")
